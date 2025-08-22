@@ -1,25 +1,17 @@
-import { calcLength } from './delta-calc.mjs';
+import { isVariantLabel } from '../../render/utils/is-variant-label.mjs';
+import { isControllingVariants } from '../../render/utils/is-controlling-variants.mjs';
 
-function isAxisDeltaZero(delta) {
-    return delta.translate === 0 && delta.scale === 1;
-}
-function isDeltaZero(delta) {
-    return isAxisDeltaZero(delta.x) && isAxisDeltaZero(delta.y);
-}
-function boxEquals(a, b) {
-    return (a.x.min === b.x.min &&
-        a.x.max === b.x.max &&
-        a.y.min === b.y.min &&
-        a.y.max === b.y.max);
-}
-function boxEqualsRounded(a, b) {
-    return (Math.round(a.x.min) === Math.round(b.x.min) &&
-        Math.round(a.x.max) === Math.round(b.x.max) &&
-        Math.round(a.y.min) === Math.round(b.y.min) &&
-        Math.round(a.y.max) === Math.round(b.y.max));
-}
-function aspectRatio(box) {
-    return calcLength(box.x) / calcLength(box.y);
+function getCurrentTreeVariants(props, context) {
+    if (isControllingVariants(props)) {
+        const { initial, animate } = props;
+        return {
+            initial: initial === false || isVariantLabel(initial)
+                ? initial
+                : undefined,
+            animate: isVariantLabel(animate) ? animate : undefined,
+        };
+    }
+    return props.inherit !== false ? context : {};
 }
 
-export { aspectRatio, boxEquals, boxEqualsRounded, isDeltaZero };
+export { getCurrentTreeVariants };

@@ -1,3 +1,3 @@
-const visualElementStore = new WeakMap();
+const appearAnimationStore = new Map();
 
-export { visualElementStore };
+export { appearAnimationStore };
