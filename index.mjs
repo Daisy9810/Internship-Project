@@ -1,50 +1,46 @@
-import { isCSSVariableName } from '../../render/dom/utils/is-css-variable.mjs';
-import { transformProps } from '../../render/html/utils/transform.mjs';
-import { addUniqueItem, removeItem } from '../../utils/array.mjs';
-import { useConstant } from '../../utils/use-constant.mjs';
-import { MotionValue } from '../index.mjs';
-import { camelToDash } from '../../render/dom/utils/camel-to-dash.mjs';
+import { PanSession } from './PanSession.mjs';
+import { addPointerEvent } from '../../events/add-pointer-event.mjs';
+import { Feature } from '../../motion/features/Feature.mjs';
+import { noop } from '../../utils/noop.mjs';
+import { frame } from '../../frameloop/frame.mjs';
 
-class WillChangeMotionValue extends MotionValue {
+const asyncHandler = (handler) => (event, info) => {
+    if (handler) {
+        frame.update(() => handler(event, info));
+    }
+};
+class PanGesture extends Feature {
     constructor() {
         super(...arguments);
-        this.members = [];
-        this.transforms = new Set();
+        this.removePointerDownListener = noop;
     }
-    add(name) {
-        let memberName;
-        if (transformProps.has(name)) {
-            this.transforms.add(name);
-            memberName = "transform";
-        }
-        else if (!name.startsWith("origin") &&
-            !isCSSVariableName(name) &&
-            name !== "willChange") {
-            memberName = camelToDash(name);
-        }
-        if (memberName) {
-            addUniqueItem(this.members, memberName);
-            this.update();
-        }
+    onPointerDown(pointerDownEvent) {
+        this.session = new PanSession(pointerDownEvent, this.createPanHandlers(), { transformPagePoint: this.node.getTransformPagePoint() });
     }
-    remove(name) {
-        if (transformProps.has(name)) {
-            this.transforms.delete(name);
-            if (!this.transforms.size) {
-                removeItem(this.members, "transform");
-            }
-        }
-        else {
-            removeItem(this.members, camelToDash(name));
-        }
-        this.update();
+    createPanHandlers() {
+        const { onPanSessionStart, onPanStart, onPan, onPanEnd } = this.node.getProps();
+        return {
+            onSessionStart: asyncHandler(onPanSessionStart),
+            onStart: asyncHandler(onPanStart),
+            onMove: onPan,
+            onEnd: (event, info) => {
+                delete this.session;
+                if (onPanEnd) {
+                    frame.update(() => onPanEnd(event, info));
+                }
+            },
+        };
+    }
+    mount() {
+        this.removePointerDownListener = addPointerEvent(this.node.current, "pointerdown", (event) => this.onPointerDown(event));
     }
     update() {
-        this.set(this.members.length ? this.members.join(", ") : "auto");
+        this.session && this.session.updateHandlers(this.createPanHandlers());
+    }
+    unmount() {
+        this.removePointerDownListener();
+        this.session && this.session.end();
     }
 }
-function useWillChange() {
-    return useConstant(() => new WillChangeMotionValue("auto"));
-}
 
-export { WillChangeMotionValue, useWillChange };
+export { PanGesture };
