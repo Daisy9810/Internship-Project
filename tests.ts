@@ -1,7 +1,12 @@
-import memoize from '@emotion/memoize'
+import isPropValid from '@emotion/is-prop-valid'
 
-// $ExpectType string[]
-memoize((arg: string) => [arg])('foo')
+isPropValid('ref')
 
 // $ExpectError
-memoize((arg: number) => [arg])
+isPropValid()
+// $ExpectError
+isPropValid(5)
+// $ExpectError
+isPropValid({})
+// $ExpectError
+isPropValid('ref', 'def')

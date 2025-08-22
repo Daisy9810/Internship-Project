@@ -1,3 +1,5 @@
-type Fn<T> = (key: string) => T
+// Definitions by: Junyoung Clare Jang <https://github.com/Ailrun>
+// TypeScript Version: 2.1
 
-export default function memoize<T>(fn: Fn<T>): Fn<T>
+declare function isPropValid(string: string): boolean
+export default isPropValid
